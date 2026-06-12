@@ -116,6 +116,7 @@ export default function LivePreview({ state }: { state: TabsState }) {
                   opacity: disabled ? 0.5 : 1,
                   padding: "12px 14px",
                   textAlign: "left",
+                  transition: state.motion ? "background 0.2s ease, border-color 0.2s ease, color 0.2s ease" : "none",
                 }}
               >
                 {state.label} {index + 1}
@@ -134,8 +135,8 @@ export default function LivePreview({ state }: { state: TabsState }) {
               id={panelId}
               role="tabpanel"
               aria-labelledby={tabId}
-              tabIndex={0}
-              hidden={!selected}
+              tabIndex={selected ? 0 : -1}
+              aria-hidden={!selected || undefined}
               style={{
                 minHeight: Math.max(120, Math.round(state.height / 3)),
                 borderRadius: Math.max(12, state.radius - 4),
@@ -144,6 +145,9 @@ export default function LivePreview({ state }: { state: TabsState }) {
                 color: state.muted,
                 fontSize: state.bodySize,
                 padding: 16,
+                display: selected ? undefined : "none",
+                opacity: selected ? 1 : 0,
+                transition: state.motion ? "opacity 0.2s ease" : "none",
               }}
             >
               <strong style={{ display: "block", color: state.foreground, marginBottom: 8 }}>{state.label} {index + 1}</strong>
