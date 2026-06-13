@@ -2,20 +2,36 @@
 
 import { useState, type CSSProperties, type KeyboardEvent } from "react";
 import type { TabsState } from "../types";
+import { SYSTEM_FONTS } from "@/components/shared/typography/fontConstants";
+
+function resolveFont(state: TabsState): string {
+  return state.fontBucket === "google" ? `"${state.googleFontFamily}", sans-serif` : (SYSTEM_FONTS[state.systemFontIdx]?.css ?? "inherit");
+}
 
 function shell(state: TabsState): CSSProperties {
+  const br = state.radiusLinked
+    ? `${state.radius}px`
+    : `${state.radiusTL}px ${state.radiusTR}px ${state.radiusBR}px ${state.radiusBL}px`;
+  const shadow = state.shadowEnabled
+    ? `${state.shadowX}px ${state.shadowY}px ${state.shadowBlur}px ${state.shadowSpread}px ${state.shadowColor}${Math.round(state.shadowOpacity * 255).toString(16).padStart(2, "0")}`
+    : "none";
   return {
     width: state.width,
     minHeight: state.height,
     padding: state.padding,
     display: "grid",
     gap: state.gap,
-    borderRadius: state.radius,
-    border: `${state.borderWidth}px solid ${state.border}`,
-    boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow}px rgba(0,0,0,.28)`,
+    borderRadius: br,
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
+    boxShadow: shadow,
     background: state.background,
     color: state.foreground,
-    fontFamily: state.fontFamily,
+    fontFamily: resolveFont(state),
+    fontStyle: state.fontStyle,
+    textTransform: state.textTransform,
+    textDecoration: state.textDecoration,
+    letterSpacing: `${state.letterSpacing}${state.letterSpacingUnit}`,
+    lineHeight: state.lineHeight,
     opacity: state.disabled ? 0.55 : 1,
   };
 }
@@ -106,7 +122,7 @@ export default function LivePreview({ state }: { state: TabsState }) {
                 onKeyDown={(event) => !disabled && handleKeyDown(event, index)}
                 style={{
                   border: `${state.borderWidth}px solid ${selected ? state.accent : state.border}`,
-                  borderRadius: state.indicator === "underline" ? 8 : Math.max(10, state.radius - 8),
+                  borderRadius: state.indicator === "underline" ? 8 : Math.max(10, (state.radiusLinked ? state.radius : state.radiusTL) - 8),
                   borderBottomWidth: state.indicator === "underline" && selected ? Math.max(2, state.borderWidth + 2) : state.borderWidth,
                   background: selected ? `color-mix(in oklab, ${state.accent} 18%, transparent)` : "transparent",
                   color: selected ? state.foreground : state.muted,
@@ -116,7 +132,9 @@ export default function LivePreview({ state }: { state: TabsState }) {
                   opacity: disabled ? 0.5 : 1,
                   padding: "12px 14px",
                   textAlign: "left",
-                  transition: state.motion ? "background 0.2s ease, border-color 0.2s ease, color 0.2s ease" : "none",
+                  transition: state.transitionDuration > 0 ? `background ${state.transitionDuration}ms ${state.transitionEasing}, border-color ${state.transitionDuration}ms ${state.transitionEasing}, color ${state.transitionDuration}ms ${state.transitionEasing}` : "none",
+                  outline: state.focusRingEnabled ? `${state.focusRingWidth}px solid ${state.focusRingColor}` : undefined,
+                  outlineOffset: state.focusRingEnabled ? state.focusRingOffset : undefined,
                 }}
               >
                 {state.label} {index + 1}
@@ -139,7 +157,7 @@ export default function LivePreview({ state }: { state: TabsState }) {
               aria-hidden={!selected || undefined}
               style={{
                 minHeight: Math.max(120, Math.round(state.height / 3)),
-                borderRadius: Math.max(12, state.radius - 4),
+                borderRadius: Math.max(12, (state.radiusLinked ? state.radius : state.radiusBR) - 4),
                 border: `${state.borderWidth}px solid ${state.border}`,
                 background: "rgba(255,255,255,0.06)",
                 color: state.muted,
@@ -147,7 +165,7 @@ export default function LivePreview({ state }: { state: TabsState }) {
                 padding: 16,
                 display: selected ? undefined : "none",
                 opacity: selected ? 1 : 0,
-                transition: state.motion ? "opacity 0.2s ease" : "none",
+                transition: state.transitionDuration > 0 ? `opacity ${state.transitionDuration}ms ${state.transitionEasing}` : "none",
               }}
             >
               <strong style={{ display: "block", color: state.foreground, marginBottom: 8 }}>{state.label} {index + 1}</strong>
