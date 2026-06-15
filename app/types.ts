@@ -1,4 +1,4 @@
-export type SectionId = "presets" | "basics" | "metadata" | "content" | "items" | "behavior" | "layout" | "placement" | "sizing" | "colors" | "border" | "radius" | "shadow" | "typography" | "transitions" | "focus-ring" | "states" | "accessibility";
+export type SectionId = "presets" | "basics" | "metadata" | "content" | "items" | "behavior" | "layout" | "placement" | "sizing" | "colors" | "border" | "radius" | "shadow" | "typography" | "transitions" | "focus-ring" | "states" | "disabled" | "accessibility";
 
 export type TabsState = {
   title: string;
@@ -20,6 +20,14 @@ export type TabsState = {
   muted: string;
   accent: string;
   border: string;
+  activeTabBg: string;
+  activeTabText: string;
+  activeTabBorder: string;
+  inactiveTabText: string;
+  inactiveTabBorder: string;
+  panelBg: string;
+  panelText: string;
+  panelBorder: string;
   // Typography (full button-parity)
   fontBucket: "system" | "google";
   fontSearch: string;
@@ -59,6 +67,12 @@ export type TabsState = {
   transitionEasing: "ease" | "ease-in" | "ease-out" | "ease-in-out" | "linear";
   previewState: "default" | "hover" | "focus" | "active" | "open" | "closed" | "selected" | "loading" | "empty" | "error" | "success";
   disabled: boolean;
+  disabledOpacity: number;
+  disabledCursor: "not-allowed" | "default" | "pointer";
+  disabledUseCustomColors: boolean;
+  disabledBg: string;
+  disabledText: string;
+  disabledBorder: string;
   role: "tablist";
   itemCount: number;
   activeIndex: number;
@@ -66,6 +80,42 @@ export type TabsState = {
   activationMode: "automatic" | "manual";
   indicator: string;
   disabledItems: number;
+  // Tab hover/disabled
+  hoverTabBg: string;
+  hoverTabText: string;
+  hoverTabBorder: string;
+  disabledTabColor: string;
+  disabledTabBg: string;
+  // Indicator
+  indicatorColor: string;
+  indicatorHeight: number;
+  indicatorRadius: number;
+  // Tab geometry
+  tabGap: number;
+  tabPaddingX: number;
+  tabPaddingY: number;
+  tabRadius: number;
+  tabListBg: string;
+  tabListBorder: string;
+  // Panel
+  panelPadding: number;
+  panelRadius: number;
+  // Overflow
+  overflowMode: "scroll" | "dropdown" | "wrap";
+  scrollButtonBg: string;
+  scrollButtonColor: string;
+  // Badge
+  badgeBg: string;
+  badgeText: string;
+  badgeRadius: number;
+  // Close & icons
+  closableTabs: boolean;
+  closeIconColor: string;
+  closeIconHoverBg: string;
+  iconColor: string;
+  iconActiveColor: string;
+  iconSize: number;
+  iconPosition: "left" | "right";
 };
 
 export type StudioPreset = { id: string; family: string; archetype: string; variant: string; size: string; tags: string[]; state: Partial<TabsState> & Record<string, unknown> };
@@ -138,6 +188,10 @@ export const SECTIONS: Array<{ id: SectionId; label: string }> = [
   {
     "id": "states",
     "label": "State Preview"
+  },
+  {
+    "id": "disabled",
+    "label": "Disabled"
   },
   {
     "id": "accessibility",

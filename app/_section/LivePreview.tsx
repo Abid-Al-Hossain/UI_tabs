@@ -22,9 +22,9 @@ function shell(state: TabsState): CSSProperties {
     display: "grid",
     gap: state.gap,
     borderRadius: br,
-    border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`,
+    border: `${state.borderWidth}px ${state.borderStyle} ${state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border}`,
     boxShadow: shadow,
-    background: state.background,
+    background: state.disabled && state.disabledUseCustomColors ? state.disabledBg : state.background,
     color: state.foreground,
     fontFamily: resolveFont(state),
     fontStyle: state.fontStyle,
@@ -32,7 +32,7 @@ function shell(state: TabsState): CSSProperties {
     textDecoration: state.textDecoration,
     letterSpacing: `${state.letterSpacing}${state.letterSpacingUnit}`,
     lineHeight: state.lineHeight,
-    opacity: state.disabled ? 0.55 : 1,
+    opacity: state.disabled ? state.disabledOpacity : 1,
   };
 }
 
@@ -42,8 +42,11 @@ export default function LivePreview({ state }: { state: TabsState }) {
   const enabledIndexes = Array.from({ length: itemCount }, (_, index) => index).filter((index) => index >= disabledCount);
   const initialIndex = enabledIndexes.includes(state.activeIndex) ? state.activeIndex : enabledIndexes[0] ?? 0;
   const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [hoverIndex, setHoverIndex] = useState(-1);
+  const [closeHoverIndex, setCloseHoverIndex] = useState(-1);
   const selectedIndex = enabledIndexes.includes(activeIndex) ? activeIndex : enabledIndexes[0] ?? 0;
   const isVertical = state.orientation === "vertical";
+  const isUnderline = state.indicator === "underline";
 
   const moveSelection = (current: number, direction: 1 | -1) => {
     if (!enabledIndexes.length) return current;
@@ -94,18 +97,42 @@ export default function LivePreview({ state }: { state: TabsState }) {
         <p style={{ margin: 0, color: state.muted, fontSize: state.bodySize }}>{state.description}</p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: isVertical ? "minmax(140px, 0.45fr) 1fr" : "1fr", gap: Math.max(10, state.gap) }}>
-        <div
-          role="tablist"
-          aria-label={state.ariaLabel}
-          aria-orientation={state.orientation}
-          data-activation-mode={state.activationMode}
-          style={{ display: "flex", flexDirection: isVertical ? "column" : "row", gap: 8, flexWrap: "wrap" }}
-        >
+        <div style={{ display: "flex", flexDirection: isVertical ? "column" : "row", alignItems: "center", gap: 6 }}>
+          {!isVertical && state.overflowMode === "scroll" ? (
+            <button type="button" aria-label="Scroll tabs left" style={{ flexShrink: 0, display: "grid", placeItems: "center", width: 28, height: 28, borderRadius: 8, border: 0, background: state.scrollButtonBg, color: state.scrollButtonColor, cursor: "pointer" }}>‹</button>
+          ) : null}
+          <div
+            role="tablist"
+            aria-label={state.ariaLabel}
+            aria-orientation={state.orientation}
+            data-activation-mode={state.activationMode}
+            style={{
+              display: "flex",
+              flexDirection: isVertical ? "column" : "row",
+              gap: state.tabGap,
+              flexWrap: !isVertical && state.overflowMode === "wrap" ? "wrap" : "nowrap",
+              overflowX: !isVertical && state.overflowMode === "scroll" ? "auto" : "visible",
+              width: "100%",
+              padding: state.tabListBg !== "transparent" || state.tabListBorder !== "transparent" ? 6 : 0,
+              borderRadius: 10,
+              background: state.tabListBg,
+              border: `1px solid ${state.tabListBorder}`,
+            }}
+          >
           {Array.from({ length: itemCount }, (_, index) => {
             const disabled = state.disabled || index < disabledCount;
             const selected = index === selectedIndex;
+            const hovered = hoverIndex === index && !disabled && !selected;
             const tabId = `${state.id}-tab-${index + 1}`;
             const panelId = `${state.id}-panel-${index + 1}`;
+            const bg = disabled ? state.disabledTabBg : selected ? state.activeTabBg : hovered ? state.hoverTabBg : "transparent";
+            const fg = disabled ? state.disabledTabColor : selected ? state.activeTabText : hovered ? state.hoverTabText : state.inactiveTabText;
+            const bc = disabled ? state.inactiveTabBorder : selected ? state.activeTabBorder : hovered ? state.hoverTabBorder : state.inactiveTabBorder;
+            const icon = (
+              <svg aria-hidden="true" width={state.iconSize} height={state.iconSize} viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="7" cy="7" r="5" stroke={selected ? state.iconActiveColor : state.iconColor} strokeWidth="1.6" />
+              </svg>
+            );
 
             return (
               <button
@@ -119,28 +146,52 @@ export default function LivePreview({ state }: { state: TabsState }) {
                 disabled={disabled}
                 tabIndex={selected ? 0 : -1}
                 onClick={() => !disabled && setActiveIndex(index)}
+                onMouseEnter={() => setHoverIndex(index)}
+                onMouseLeave={() => setHoverIndex(-1)}
                 onKeyDown={(event) => !disabled && handleKeyDown(event, index)}
                 style={{
-                  border: `${state.borderWidth}px solid ${selected ? state.accent : state.border}`,
-                  borderRadius: state.indicator === "underline" ? 8 : Math.max(10, (state.radiusLinked ? state.radius : state.radiusTL) - 8),
-                  borderBottomWidth: state.indicator === "underline" && selected ? Math.max(2, state.borderWidth + 2) : state.borderWidth,
-                  background: selected ? `color-mix(in oklab, ${state.accent} 18%, transparent)` : "transparent",
-                  color: selected ? state.foreground : state.muted,
+                  position: "relative",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  border: `${state.borderWidth}px solid ${bc}`,
+                  borderRadius: isUnderline ? 8 : state.tabRadius,
+                  background: bg,
+                  color: fg,
                   cursor: disabled ? "not-allowed" : "pointer",
                   font: "inherit",
                   fontWeight: selected ? 700 : 500,
-                  opacity: disabled ? 0.5 : 1,
-                  padding: "12px 14px",
+                  opacity: disabled ? state.disabledOpacity : 1,
+                  padding: `${state.tabPaddingY}px ${state.tabPaddingX}px`,
                   textAlign: "left",
                   transition: state.transitionDuration > 0 ? `background ${state.transitionDuration}ms ${state.transitionEasing}, border-color ${state.transitionDuration}ms ${state.transitionEasing}, color ${state.transitionDuration}ms ${state.transitionEasing}` : "none",
                   outline: state.focusRingEnabled ? `${state.focusRingWidth}px solid ${state.focusRingColor}` : undefined,
                   outlineOffset: state.focusRingEnabled ? state.focusRingOffset : undefined,
                 }}
               >
-                {state.label} {index + 1}
+                {state.iconPosition === "left" ? icon : null}
+                <span>{state.label} {index + 1}</span>
+                {index === 1 ? <span style={{ display: "inline-grid", placeItems: "center", minWidth: 18, height: 18, padding: "0 5px", fontSize: 11, fontWeight: 700, background: state.badgeBg, color: state.badgeText, borderRadius: state.badgeRadius }}>3</span> : null}
+                {state.iconPosition === "right" ? icon : null}
+                {state.closableTabs ? (
+                  <span
+                    role="button"
+                    aria-label={`Close ${state.label} ${index + 1}`}
+                    onMouseEnter={() => setCloseHoverIndex(index)}
+                    onMouseLeave={() => setCloseHoverIndex(-1)}
+                    style={{ display: "grid", placeItems: "center", width: 18, height: 18, borderRadius: 6, color: state.closeIconColor, background: closeHoverIndex === index ? state.closeIconHoverBg : "transparent" }}
+                  >
+                    <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                  </span>
+                ) : null}
+                {isUnderline && selected ? <span aria-hidden="true" style={{ position: "absolute", left: 8, right: 8, bottom: -1, height: state.indicatorHeight, background: state.indicatorColor, borderRadius: state.indicatorRadius }} /> : null}
               </button>
             );
           })}
+          </div>
+          {!isVertical && state.overflowMode === "scroll" ? (
+            <button type="button" aria-label="Scroll tabs right" style={{ flexShrink: 0, display: "grid", placeItems: "center", width: 28, height: 28, borderRadius: 8, border: 0, background: state.scrollButtonBg, color: state.scrollButtonColor, cursor: "pointer" }}>›</button>
+          ) : null}
         </div>
         {Array.from({ length: itemCount }, (_, index) => {
           const selected = index === selectedIndex;
@@ -157,12 +208,12 @@ export default function LivePreview({ state }: { state: TabsState }) {
               aria-hidden={!selected || undefined}
               style={{
                 minHeight: Math.max(120, Math.round(state.height / 3)),
-                borderRadius: Math.max(12, (state.radiusLinked ? state.radius : state.radiusBR) - 4),
-                border: `${state.borderWidth}px solid ${state.border}`,
-                background: "rgba(255,255,255,0.06)",
-                color: state.muted,
+                borderRadius: state.panelRadius,
+                border: `${state.borderWidth}px solid ${state.panelBorder}`,
+                background: state.panelBg,
+                color: state.panelText,
                 fontSize: state.bodySize,
-                padding: 16,
+                padding: state.panelPadding,
                 display: selected ? undefined : "none",
                 opacity: selected ? 1 : 0,
                 transition: state.transitionDuration > 0 ? `opacity ${state.transitionDuration}ms ${state.transitionEasing}` : "none",
