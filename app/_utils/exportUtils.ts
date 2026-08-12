@@ -1,28 +1,12 @@
 import type { TabsState } from "../types";
+import { SYSTEM_FONTS } from "@/components/shared/typography/fontConstants";
 
 export type ExportPayload = { fileName: string; mimeType: "text/plain;charset=utf-8"; content: string };
-
-const SYSTEM_FONTS: Record<number, string> = {
-  0: "Arial, system-ui",
-  1: 'Consolas, "Liberation Mono", "Courier New", ui-monospace, monospace',
-  2: '"Courier New", ui-monospace, monospace',
-  3: "Georgia, ui-serif, serif",
-  4: "Helvetica, Arial, system-ui",
-  5: 'Menlo, Monaco, Consolas, "Liberation Mono", ui-monospace, monospace',
-  6: '"Segoe UI", system-ui, sans-serif',
-  7: '"SF Pro Display", system-ui, sans-serif',
-  8: "system-ui, sans-serif",
-  9: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
-  10: '"Times New Roman", ui-serif, serif',
-  11: '"Trebuchet MS", sans-serif',
-  12: "Verdana, sans-serif",
-  13: '"Comic Sans MS", cursive',
-};
 
 function resolveFont(state: TabsState): string {
   return state.fontBucket === "google"
     ? `"${state.googleFontFamily}", sans-serif`
-    : (SYSTEM_FONTS[state.systemFontIdx] ?? "inherit");
+    : (SYSTEM_FONTS[state.systemFontIdx]?.css ?? "system-ui");
 }
 
 function buildBorderRadius(state: TabsState, offset = 0): string {
@@ -124,7 +108,7 @@ export function buildReactCode(state: TabsState) {
     `      boxShadow: "${shadow}",`,
     `      background: state.disabled && state.disabledUseCustomColors ? state.disabledBg : "${state.background}",`,
     `      color: state.foreground,`,
-    `      fontFamily: "${resolvedFont}",`,
+    `      fontFamily: ${JSON.stringify(resolvedFont)},`,
     `      fontStyle: "${state.fontStyle}",`,
     `      textTransform: "${state.textTransform}",`,
     `      textDecoration: "${state.textDecoration}",`,
